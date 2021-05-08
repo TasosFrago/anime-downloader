@@ -1,6 +1,7 @@
 * Realy simple anime downloader in python
 
   This is a simple anime downloader that downloads anime from https://www1.gogoanime.ai/. You just give it the range of episodes you want to install. It is a realy basic script. Maybe I'll updated in the future.
+  It uses selenium to get the urls for the episodes and requests to download them.
 
 ** Installation
 

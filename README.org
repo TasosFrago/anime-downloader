@@ -1,0 +1,36 @@
+* Realy simple anime downloader in python
+
+  This is a simple anime downloader that downloads anime from https://www1.gogoanime.ai/. You just give it the range of episodes you want to install. It is a realy basic script. Maybe I'll updated in the future.
+
+** Installation
+
+   Clone the repo, cd into it and install the enviroment(You need to have pipenv installed).
+
+   #+BEGIN_SRC sh
+     $ pipenv install
+   #+END_SRC
+
+** Usage
+
+  Change the ~base-url~ variable to specify the anime you want to download. Copy paste the url from the site removing the episode number at the end. It will not work otherwise.
+
+  Change the ~numbers_of_episodes~ variable to specify how many episodes you want downloaded
+
+  Change the ~beging_from~ variable to specify from which episode to begin downloading
+
+  Run the script with:
+  #+BEGIN_SRC sh
+    $ python anime-dl.py
+  #+END_SRC
+
+** Things to note
+
+   + The episodes are installed on the directory in which the script is run.
+
+   + It does not display any percentage of the episode installing.
+   
+   + It might stop working at any time.
+
+
+   I might add more feutures in the future.
+   

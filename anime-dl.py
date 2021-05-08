@@ -83,10 +83,6 @@ class Anime:
         elem = self.driver.find_element_by_xpath(xpath)
         src = elem.get_attribute('src')
 
-        # for i in range(len(self.driver.window_handles)):
-        #     self.driver.switch_to.window(self.driver.window_handles[0])
-        #     self.driver.close()
-
         self.driver.quit()
         dicti = {'id': num, 'title': title, 'url': src}
         return dicti
@@ -101,12 +97,12 @@ class Anime:
 if __name__=='__main__':
     urls = []
     base_url = "https://www1.gogoanime.ai/one-piece-episode-"
-    for i in range(5):
-        num = 948 + i
+    number_of_episodes = 1 ## Put the number of episodes you want installed
+    begin_from = 0 ## If you want it to start downloading from a scpecific episode
+    for i in range(number_of_episodes):
+        num = begin_from + i
         test = Anime(base_url)
         x = test.install_from(num)
         urls.append(x)
 
         test.download(x['title'], x['url'])
-
-    print(urls)

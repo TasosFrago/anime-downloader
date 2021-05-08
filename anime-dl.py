@@ -5,8 +5,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import requests
-from bs4 import BeautifulSoup
-import html.parser
 
 def wait(driver, path, click=False):
     if click == False:

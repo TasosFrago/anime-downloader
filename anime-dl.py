@@ -43,11 +43,7 @@ class Anime:
 
         # Make the title
         title_parts = elem.text.split()
-        title_parts = title_parts[0: -4]
-        title = ""
-        for i in title_parts:
-            title = f"{title}_{i}"
-        title = "{}.mp4".format(title[1:])
+        title = "_".join(title_parts[0: -4]) + ".mp4"
 
         # Finding the url
         # Switch to iframe
@@ -96,7 +92,7 @@ if __name__=='__main__':
     urls = []
     base_url = "https://www1.gogoanime.ai/one-piece-episode-"
     number_of_episodes = 1 ## Put the number of episodes you want installed
-    begin_from = 0 ## If you want it to start downloading from a scpecific episode
+    begin_from = 1 ## If you want it to start downloading from a scpecific episode
     for i in range(number_of_episodes):
         num = begin_from + i
         test = Anime(base_url)

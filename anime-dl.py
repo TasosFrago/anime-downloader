@@ -151,15 +151,9 @@ if __name__=='__main__':
     base_url = "https://www1.gogoanime.ai/tensei-shitara-slime-datta-ken-2nd-season-episode-"
     number_of_episodes = 12 ## Put the number of episodes you want installed
     begin_from = 1 ## If you want it to start downloading from a scpecific episode
-    # for i in range(number_of_episodes):
-    #     num = begin_from + i
-    #     test = Anime()
-    #     x = test.install_from(num, base_url)
-    #     # test.download(x['title'], x['url'])
-    #     print(x['url'])
-
-    # test = Anime()
-    # print(test._get_title("Castlevania Season 4 (Dub) Episode 1"))
-
-    test = Anime()
-    print(test.search("juju"))
+    for i in range(number_of_episodes):
+        num = begin_from + i
+        test = Anime()
+        x = test.install_from(num, base_url)
+        # test.download(x['title'], x['url'])
+        print(x['url'])

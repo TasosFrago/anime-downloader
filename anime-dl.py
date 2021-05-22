@@ -1,102 +1,165 @@
 from time import sleep
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+import os
 import requests
-
-def wait(driver, path, click=False):
-    if click == False:
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, path)))
-    else:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, path)))
+from bs4 import BeautifulSoup
+import html.parser
 
 class Anime:
 
-    def __init__(self, base_url):
-        fireFoxOptions = webdriver.FirefoxOptions()
-        fireFoxOptions.set_headless
-        self.driver = webdriver.Firefox(options=fireFoxOptions)
-        self.driver.implicitly_wait(10)
-        self.base_url = base_url
+    def __init__(self):
+        pass
 
-    def _connect(self, gurl):
-        try:
-            self.driver.get(gurl)
-        except:
-            print("Timeout error: Failed to connect to the website")
+    def _get_title(self, title: str) ->str:
 
-    def install_from(self, num):
-        # range_list is a list containing two values so it knows at which episode to start and which to end
+        # Dictionary with the words to replace and their replacement
+        words_to_replace = [
+            {
+             'old': ["Episode"],
+             'new': "ep"
+             },
+            {
+             'old': ["Subbed", "(Sub)", "Sub"],
+             'new': "sub"
+             },
+            {
+             'old': ["Dubbed", "Dub", "(Dub)"],
+             'new': "dub"
+             },
+                            ]
+        # Replacing the words 
+        for i in words_to_replace:
+            for word in i['old']:
+                if word in title:
+                    title = title.replace(word, i['new'])
 
-        dicti = {'id': "", 'title': "", 'url': ""}
+        # Spliting it in to a list in order to join it with underscores
+        title_parts = title.split()
+        title = "_".join(title_parts) + ".mp4"
 
-        # connect to that url
-        url = f"{self.base_url}{str(num)}"
-        self._connect(url)
+        return title
 
-        # Finding the title
-        xpath = "//div[@class='anime_video_body']/h1"
-        wait(self.driver, xpath)
-        elem = self.driver.find_element_by_xpath(xpath)
+    def install_from(self, num: int, base_url: str, resolution: str="HDP") -> dict:
+        # Initializing the dictionary
+        dicti = {
+            'id': num,
+            'title': "",
+            'size': "",
+            'duration': "",
+            'default_resolution': "",
+            'url': ""
+                 }
 
-        # Make the title
-        title_parts = elem.text.split()
-        title = "_".join(title_parts[0: -4]) + ".mp4"
+        # Making the url
+        url = f"{base_url}{str(num)}"
+        # Getting the html from the page
+        page = requests.get(url)
 
-        # Finding the url
-        # Switch to iframe
-        frame = "//div[@class='play-video']/iframe"
-        wait(self.driver, frame)
-        iframe = self.driver.find_element_by_xpath(frame)
-        self.driver.switch_to.frame(iframe)
+        # Making the soup
+        soup = BeautifulSoup(page.content, "html.parser")
 
-        # Click the play button
-        xpath = "//div[@class='jw-icon jw-icon-display jw-button-color jw-reset'][@role='button']"
-        wait(self.driver, xpath, click=True)
-        elem = self.driver.find_element_by_xpath(xpath)
-        self.driver.execute_script("arguments[0].click();", elem)
+        # Finding the link for the downloads page
+        tag = soup.find("li", {'class': "dowloads"})
+        downloadPageUrl = tag.find("a").attrs['href']
 
-        # Switch back to first tab after redirect
-        self.driver.switch_to.window(self.driver.window_handles[0])
+        # Making a new soup
+        page = requests.get(downloadPageUrl)
+        soup = BeautifulSoup(page.content, "html.parser")
 
-        iframe = self.driver.find_element_by_xpath(frame)
-        self.driver.switch_to.frame(iframe)
+        # Getting information about the episode
+        information = soup.find("div", {'class': "sumer_l"})
+        li_tag = information.find_all("li")
 
-        xpath = "//div[@class='jw-display-icon-container jw-display-icon-display jw-reset']"
-        wait(self.driver, xpath, click=True)
-        elem = self.driver.find_element_by_xpath(xpath)
-        self.driver.execute_script("arguments[0].scrollIntoView();", elem)
-        sleep(1)
-        elem.click()
+        # Passing the information to the dictionary
+        dicti['title'] = self._get_title(li_tag[0].text.replace("File name:", ""))
+        dicti['size'] = li_tag[1].text
+        dicti['duration'] = li_tag[2].text
+        dicti['default_resolution'] = li_tag[3].text
 
-        # Find the url
-        xpath = "//video[@class='jw-video jw-reset']"
-        wait(self.driver, xpath)
-        elem = self.driver.find_element_by_xpath(xpath)
-        src = elem.get_attribute('src')
+        # Finding the download link
+        tag = soup.find("div", {'class': "mirror_link"})
+        div_tags = tag.find_all("div")
 
-        self.driver.quit()
-        dicti = {'id': num, 'title': title, 'url': src}
+        # Passing the link to the dictionary based on the input resolution
+        dicti['url'] = [i.find("a").attrs['href'] for i in div_tags if resolution in i.text][0]
+
+        # returning the dictionary
         return dicti
+    
+    def download(self, title: str, url: str):
 
-    def download(self, title, url):
-        video = requests.get(url, stream=True)
-        with open(title, "wb") as fh:
-            for chunk in video.iter_content(chunk_size=1024*1024):
-                if chunk:
-                    fh.write(chunk)
+        try:
+            # Getting the current directory
+            CURR_DIR = os.getcwd()
+            # Making the directory name by removing the .mp4 and the episode number
+            title_parts = title.split("_")
+            dir_title = "_".join(title_parts[0: -2])
+            folder = os.path.join(CURR_DIR, dir_title)
+            # Create the directory if it does not exist
+            if not os.path.exists(folder):
+                os.mkdir(folder)
+            else:
+                pass
+
+            print(f"Downloading {title}...")
+            video = requests.get(url, stream=True)
+            file_size = video.headers.get('Content-Length', None)
+            file_size = int(file_size) // 1048576
+            with open(os.path.join(folder, title), "wb") as fh:
+                for i, chunk in enumerate(video.iter_content(chunk_size=1024*1024)):
+                    if chunk:
+                        percentage = f"\033[1;32m{str((i * 100) // file_size)}\033[0m%"
+                        print(percentage, end='\r')
+                        fh.write(chunk) 
+            print(f" * {title} installed")
+            
+        except:
+            pass
+
+    def search(self, search: str) -> list:
+        results = []
+
+        url = f"https://www1.gogoanime.ai//search.html?keyword={search}"
+        base_url = "https://www1.gogoanime.ai"
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, "html.parser")
+
+        ul_tag = soup.find("ul", {'class': "items"})
+        items = ul_tag.find_all("li")
+        for i, item in enumerate(items):
+            p_tag = item.find("p", {'class': "name"})
+            a_tag = p_tag.find("a")
+
+            id = i
+            title = a_tag.text
+            link = base_url + str(a_tag.attrs['href']).replace("category/", "") + "-episode-"
+            date_released = item.find("p", {'class': "released"}).text.replace("Released:", "").split()[0]
+
+            dicti = {
+                'id': id,
+                'title': title,
+                'url': link,
+                'date_released': date_released,
+                    }
+
+            results.append(dicti)
+
+        return results
 
 if __name__=='__main__':
     urls = []
-    base_url = "https://www1.gogoanime.ai/one-piece-episode-"
-    number_of_episodes = 1 ## Put the number of episodes you want installed
+    # base_url = "https://www1.gogoanime.ai/castlevania-season-4-dub-episode-"
+    base_url = "https://www1.gogoanime.ai/tensei-shitara-slime-datta-ken-2nd-season-episode-"
+    number_of_episodes = 12 ## Put the number of episodes you want installed
     begin_from = 1 ## If you want it to start downloading from a scpecific episode
-    for i in range(number_of_episodes):
-        num = begin_from + i
-        test = Anime(base_url)
-        x = test.install_from(num)
-        urls.append(x)
+    # for i in range(number_of_episodes):
+    #     num = begin_from + i
+    #     test = Anime()
+    #     x = test.install_from(num, base_url)
+    #     # test.download(x['title'], x['url'])
+    #     print(x['url'])
 
-        test.download(x['title'], x['url'])
+    # test = Anime()
+    # print(test._get_title("Castlevania Season 4 (Dub) Episode 1"))
+
+    test = Anime()
+    print(test.search("juju"))
